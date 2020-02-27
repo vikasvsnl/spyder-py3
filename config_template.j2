@@ -1,0 +1,219 @@
+usergroup priv15
+ taskgroup root-lr
+ taskgroup cisco-support
+ description TACACS PRIV 15
+!
+username ciscoin
+ group priv15
+ password 7 072D294D5C1D1025464058
+!
+username onm
+ secret 5 $1$TTk8$uaUHBEyPBx5Z6RKBKjknh/
+!
+lpts pifib hardware police
+ flow ntp default rate 1
+!
+key chain bharti
+ key 100
+  accept-lifetime 00:00:00 january 01 2012 infinite
+  key-string password 011112175407
+  send-lifetime 00:00:00 january 01 2012 infinite
+  cryptographic-algorithm HMAC-MD5
+ !
+!
+!
+class-map match-any CORE_NETWORK-Egress
+ description [NETWORK - IP Prec=6 -7, MPLS EXP = 6-7]
+ match traffic-class 7
+ end-class-map
+!
+class-map match-any CORE_NETWORK-Ingress
+ description [NETWORK - IP Prec=6 -7, MPLS EXP = 6-7]
+ match mpls experimental topmost 6 7
+ match precedence ipv4 6 7
+ end-class-map
+!
+!
+policy-map CORE-MPLS-ASR9k-BHARTI-Egress
+ class CORE_NETWORK-Egress
+  bandwidth percent 5
+ !
+ class class-default
+ !
+ end-policy-map
+!
+policy-map CORE-MPLS-ASR9k-BHARTI-Ingress
+ class CORE_NETWORK-Ingress
+  set traffic-class 7
+ !
+ class class-default
+ !
+ end-policy-map
+!
+interface Loopback0
+ ipv4 address {{ Loopback0_IP1 }} 255.255.255.255
+
+
+!
+prefix-set LABEL
+  202.123.37.0/24 le 32,
+  202.123.39.0/24 le 32,
+  202.123.42.0/24 le 32,
+  202.123.43.0/24 le 32,
+  202.123.47.0/24 le 32,
+  116.119.0.0/16 le 32,
+  202.123.34.0/24 le 32,
+  202.123.44.132/30 le 32,
+  202.56.230.23/32 le 32,
+  202.56.230.29/32 le 32,
+  10.3.170.155/32 le 32,
+  10.3.169.160/32 le 32,
+  125.62.182.192/26 le 32,
+  10.3.135.32/27 le 32,
+  61.95.140.224/27 le 32,
+  10.227.244.64/26 le 32,
+  182.79.246.0/26 le 32,
+  10.3.134.192/28 le 32,
+  172.30.1.92/32 le 32,
+  172.27.58.29/32 le 32,
+  125.62.190.0/27 le 32,
+  10.50.176.0/24 le 32
+end-set
+!
+route-policy LABEL
+  if destination in LABEL then
+    pass
+  else
+    drop
+  endif
+end-policy
+!
+route-policy add-path-to-ibgp
+  set path-selection backup 1 install
+  set path-selection all advertise
+end-policy
+
+route-policy SID100{{ route_policy1 }}
+  set label-index {{ route_policy1 }}
+  set community ({{ community1 }})
+  set community ({{ community2 }}) additive
+end-policy
+!
+route-policy add-path-to-ibgp
+  set path-selection backup 1 install
+  set path-selection all advertise
+end-policy
+
+router isis T4
+ set-overload-bit on-startup wait-for-bgp
+ is-type level-2-only
+ net {{ net1 }}
+ nsf cisco
+ log adjacency changes
+ lsp-gen-interval maximum-wait 5000 initial-wait 50 secondary-wait 200
+ lsp-refresh-interval 65000
+ max-lsp-lifetime 65535
+ lsp-password keychain bharti
+ address-family ipv4 unicast
+  metric-style wide
+  spf-interval maximum-wait 5000 initial-wait 50 secondary-wait 200
+  segment-routing mpls sr-prefer
+ !
+ address-family ipv6 unicast
+  metric-style wide
+  spf-interval maximum-wait 5000 initial-wait 50 secondary-wait 200
+ !
+ interface BE{{ BE1 }}
+  circuit-type level-2-only
+  point-to-point
+  hello-padding disable
+  hello-password keychain bharti
+  address-family ipv4 unicast
+   fast-reroute per-prefix
+   fast-reroute per-prefix ti-lfa
+  !
+ !
+ interface BE{{ BE2 }}
+  circuit-type level-2-only
+  point-to-point
+  hello-padding disable
+  hello-password keychain bharti
+  address-family ipv4 unicast
+   fast-reroute per-prefix
+   fast-reroute per-prefix ti-lfa
+  !
+ !
+ interface Loopback0
+  passive
+  address-family ipv4 unicast
+   tag {{ tag }}
+   prefix-sid index {{ route_policy1 }}
+  !
+router bgp 9730
+ bgp router-id {{ Loopback0_IP1 }}
+ address-family ipv4 unicast
+  network {{ Loopback0_IP1 }}/32 route-policy SID100{{ route_policy1 }}
+  allocate-label route-policy LABEL
+ !
+ address-family vpnv4 unicast
+ !
+ address-family vpnv6 unicast
+ !
+ address-family l2vpn vpls-vpws
+ !
+ address-family ipv4 rt-filter
+ !
+ address-family l2vpn evpn
+ !
+ neighbor-group RR
+  remote-as 9730
+  update-source Loopback0
+  address-family ipv4 labeled-unicast
+  !
+  address-family vpnv4 unicast
+  !
+  address-family vpnv6 unicast
+  !
+  address-family l2vpn vpls-vpws
+  !
+  address-family ipv4 rt-filter
+  !
+  address-family l2vpn evpn
+  !
+ !
+ neighbor {{ bgp_neighbor1 }}
+  use neighbor-group RR
+ !
+ neighbor {{ bgp_neighbor2 }}
+  use neighbor-group RR
+ !
+!
+segment-routing
+ global-block 120000 519999
+!
+netconf agent tty
+
+hw-module profile qos hqos-enable
+!
+hw-module profile bundle-scale 512
+
+track ABR1
+type route reachability
+  route ipv4 {{bgp_neighbor1}}/32
+!
+!
+track ABR2
+type route reachability
+  route ipv4 {{bgp_neighbor1}}/32
+!
+
+!
+track COMBO
+type list boolean or
+  object ABR1
+  object ABR2
+
+
+!
+end
+
