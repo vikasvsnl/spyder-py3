@@ -1,0 +1,1134 @@
+{{ hostname }}
+
+no service pad
+service tcp-keepalives-in
+service tcp-keepalives-out
+service timestamps debug datetime msec localtime show-timezone
+service timestamps log datetime msec localtime show-timezone
+service password-encryption
+service sequence-numbers
+no service dhcp
+no platform punt-keepalive disable-kernel-core
+platform tcam-parity-error enable
+platform tcam-threshold alarm-frequency 1
+!
+hostname {{ hostname }}
+!
+boot-start-marker
+boot system bootflash:IOSXE_3.18.5SP/packages.conf
+boot-end-marker
+!
+vrf definition Mgmt-intf
+!
+address-family ipv4
+exit-address-family
+!
+address-family ipv6
+exit-address-family
+!
+ipv6 unicast-routing
+!
+!
+!
+logging buffered 1000000 informational
+no logging console
+no logging monitor
+enable secret cisco
+!
+aaa new-model
+!
+!
+!
+aaa authentication login default group tacacs+ local
+aaa authentication login mgmt local
+aaa authentication login console group tacacs+ local
+aaa authorization console
+aaa authorization config-commands
+aaa authorization exec default local group tacacs+
+aaa authorization exec mgmt local
+aaa authorization commands 1 default local group tacacs+ if-authenticated
+aaa authorization commands 1 mgmt local group tacacs+
+aaa authorization commands 15 default local group tacacs+ if-authenticated
+aaa accounting commands 1 default start-stop group tacacs+
+aaa accounting commands 15 default start-stop group tacacs+
+!
+!
+!
+!
+aaa session-id common
+process cpu threshold type total rising 80 interval 5 falling 20 interval 5
+process cpu statistics limit entry-percentage 40 size 300
+clock timezone IST 5 30
+facility-alarm critical exceed-action shutdown
+no ip source-route
+!
+no ip bootp server
+no ip domain lookup
+!
+!
+!
+ip dhcp relay information option
+ip dhcp relay information trust-all
+!
+!
+cef table output-chain build favor convergence-speed
+!
+ip arp inspection log-buffer entries 1000
+ip arp inspection log-buffer logs 1000 interval 30
+ip igmp ssm-map enable
+no ip igmp ssm-map query dns
+udld recovery interval 120
+!
+!
+mpls label protocol ldp
+no mpls ip propagate-ttl forwarded
+!
+mpls ldp neighbor {{ east_nei_loopback0_IP }} password 7 011215001D534E542D47
+mpls ldp neighbor {{ west_nei_loopback0_IP }} password 7 011215001D534E542D47
+!
+mpls traffic-eng tunnels
+mpls traffic-eng reoptimize timers frequency 5
+no mpls ldp explicit-null
+mpls ldp graceful-restart
+mpls ldp session protection
+mpls ldp igp sync holddown 2000
+mpls ldp discovery targeted-hello accept
+no mpls ldp advertise-labels
+mpls ldp advertise-labels for MPLS_Loopbacks
+multilink bundle-name authenticated
+xconnect logging pseudowire status
+xconnect logging redundancy
+!
+key chain HMAC-MD5-ISIS
+ key 100
+   key-string 7 130404164D544C70272F
+!
+!
+license boot level metroaggrservices
+archive
+ log config
+  logging enable
+!
+sdm prefer default
+!
+username cisco secret cisco
+username mgmt privilege 15 view mgmt password cisco
+username common privilege 7 password 7 00271C0B095405265E731F
+username iptac1 privilege 15 password 7 04721B120E226C1F5B4A
+username centac3 privilege 15 password 7 142413050605330B717E64
+username cencore privilege 15 password 7 072C24426E5C4C5341
+username bharti privilege 15 password 7 096E46080B111E325E59527C
+username nmsemb privilege 15 password 7 080F415D2948574446
+username deepak privilege 15 password 7 0222015E1B0704011B165F
+username abhaya privilege 15 password 7 0025110E05422B535976
+username backup privilege 15 password 7 096B410D3926323C5A5E57
+username sameer privilege 15 password 7 0037120B015E1926587915
+username vineet privilege 15 password 7 13331E1C0E09100A7F717E
+username primenms privilege 15 password 7 095C5C001400191F182C567E7874
+username karthy privilege 15 password 7 1065080B111F0B2B5F567B
+username cisco privilege 15 password 7 1511021F07250B767C6065
+!
+bfd-template single-hop Access
+ interval min-tx 50 min-rx 50 multiplier 3
+!
+parser view mgmt
+ secret cisco
+ commands exec include all show
+ commands exec include all copy
+!
+ip ssh port 2000 rotary 1
+!
+cdp run
+!
+transceiver type all
+ monitoring
+ monitoring interval 300
+!
+ip ftp source-interface Loopback0
+ip tcp synwait-time 10
+ip tcp path-mtu-discovery
+ip tftp source-interface Loopback0
+ip ssh time-out 60
+ip ssh authentication-retries 2
+ip ssh port 2000 rotary 1
+ip ssh source-interface Loopback0
+ip ssh version 2
+!
+!
+class-map match-any CORE_NETWORK_IN
+description [NETWORK - IP Prec=6, MPLS EXP = 6]
+match mpls experimental topmost 6 7
+match dscp cs6 cs7
+!
+class-map match-any CORE_PREMIUM_RT_IN
+description [PREMIUM - MPLS EXP=5]
+match mpls experimental topmost 5
+!
+class-map match-any CORE_MOBILITY_DATA_IN
+description [MOBILITY DATA - MPLS EXP=4]
+match mpls experimental topmost 4
+!
+class-map match-any CORE_PREMIUM_NRT_IN
+description [NETWORK - IP Prec=3 MPLS EXP = 3]
+match mpls experimental topmost 3
+!
+class-map match-any CORE_NETWORK_OAM_IN
+description [NETWORK - IP Prec=2 MPLS EXP = 2]
+match mpls experimental topmost 2
+!
+class-map match-any CORE_MOBILITY_SIGNAL_IN
+description [SIGNALING - MPLS EXP=1]
+match mpls experimental topmost 1
+!
+class-map match-any CORE_NETWORK_OUT
+description [NETWORK - IP Prec=6, MPLS EXP = 6]
+match ip precedence 6 7
+match discard-class 6
+match discard-class 7
+!
+class-map match-any CORE_PREMIUM_RT_OUT
+description [PREMIUM - MPLS EXP=5]
+match mpls experimental topmost 5
+match discard-class 5
+!
+class-map match-any CORE_MOBILITY_DATA_OUT
+description [MOBILITY DATA - MPLS EXP=4]
+match discard-class 4
+!
+class-map match-any CORE_PREMIUM_NRT_OUT
+description [NETWORK - IP Prec=3 MPLS EXP = 3]
+match discard-class 3
+!
+class-map match-any CORE_NETWORK_OAM_OUT
+description [NETWORK - IP Prec=2 MPLS EXP = 2]
+match discard-class 2
+!
+class-map match-any CORE_MOBILITY_SIGNAL_OUT
+description [SIGNALING - MPLS EXP=1]
+match discard-class 1
+!
+Policy-map GLOBAL_CORE_INGRESS
+Class CORE_NETWORK_IN
+Set discard-class 6
+!
+Class CORE_PREMIUM_RT_IN
+Set discard-class 5
+!
+Class CORE_MOBILITY_DATA_IN
+Set discard-class 4
+!
+Class CORE_PREMIUM_NRT_IN
+Set discard-class 3
+!
+Class CORE_NETWORK_OAM_IN
+Set discard-class 2
+!
+Class CORE_MOBILITY_SIGNAL_IN
+Set discard-class 1
+!
+Class class-default
+Set discard-class 0
+Policy-map GLOBAL_CORE_EGRESS
+Class CORE_NETWORK_OUT
+bandwidth percent 5
+Queue-limit 150000 bytes
+!
+Class CORE_PREMIUM_RT_OUT
+Police cir percent 30 conform-action transmit exceed-action drop
+Priority level 1
+Queue-limit 1500000 bytes
+!
+Class CORE_MOBILITY_DATA_OUT
+Bandwidth percent 20
+queue-limit percent 50
+!
+Class CORE_PREMIUM_NRT_OUT
+Bandwidth percent 30
+queue-limit percent 50
+!
+Class CORE_NETWORK_OAM_OUT
+Bandwidth percent 5
+Queue-limit 150000 bytes
+Random-detect discard-class-based
+Random-detect discard-class 2 90000 bytes 150000 bytes
+!
+Class CORE_MOBILITY_SIGNAL_OUT
+Bandwidth percent 5
+Queue-limit 150000 bytes
+!
+Class class-default
+Bandwidth percent 5
+Queue-limit 2000000 bytes
+Random-detect discard-class-based
+Random-detect discard-class 0 1200000 bytes 2000000 bytes
+!
+!
+!
+interface Loopback0
+ description ### Management Loopback###
+ ip address {{ loopback0_IP }} 255.255.255.255
+ ip pim sparse-mode
+ isis tag 10000
+!
+!
+interface Loopback1
+ ip address {{ loopback1_IP }} 255.255.255.255
+!
+{%- if tunnel %}
+interface Tunnel{{primary_tunnel_east_nei}}
+ description @@@@ Link Protection Primary Tunnel to {{ east_nei_hostname }} @@@@
+ ip unnumbered Loopback0
+ mpls ip
+ mpls traffic-eng tunnels
+ tunnel mode mpls traffic-eng
+ tunnel destination {{ east_tunnel_dest_ip  }}
+ tunnel mpls traffic-eng autoroute announce
+ tunnel mpls traffic-eng priority 1 1
+ tunnel mpls traffic-eng path-option 1 dynamic
+ tunnel mpls traffic-eng fast-reroute
+!
+interface Tunnel{{primary_tunnel_west_nei}}
+  description @@@@ Link Protection Primary Tunnel to {{ west_nei_hostname }} @@@@
+ ip unnumbered Loopback0
+ mpls ip
+ mpls traffic-eng tunnels
+ tunnel mode mpls traffic-eng
+ tunnel destination {{ west_tunnel_dest_ip  }}
+ tunnel mpls traffic-eng autoroute announce
+ tunnel mpls traffic-eng priority 1 1
+ tunnel mpls traffic-eng path-option 1 dynamic
+ tunnel mpls traffic-eng fast-reroute
+!
+ip explicit-path name BACKUP_{{west_nei_hostname}}_TE enable
+ exclude-address {{ interface_ip_west_nei }}
+!
+ip explicit-path name BACKUP_{{east_nei_hostname}}_TE enable
+ exclude-address {{ interface_ip_east_nei }}
+!
+interface Tunnel{{backup_tunnel_east_nei}}
+ description @@@@ Link Protection Backup Tunnel to {{ east_nei_hostname }} @@@@ 
+ ip unnumbered Loopback0
+ mpls traffic-eng tunnels
+ tunnel mode mpls traffic-eng
+ tunnel destination {{ east_tunnel_dest_ip  }}
+ tunnel mpls traffic-eng priority 2 2
+ tunnel mpls traffic-eng path-option 1 explicit name BACKUP_{{east_nei_hostname}}_TE
+!
+interface Tunnel{{backup_tunnel_west_nei}}
+ description @@@@ Link Protection Backup Tunnel to {{ west_nei_hostname }} @@@@
+ ip unnumbered Loopback0
+ mpls traffic-eng tunnels
+ tunnel mode mpls traffic-eng
+ tunnel destination {{ west_tunnel_dest_ip }}
+ tunnel mpls traffic-eng priority 2 2
+ tunnel mpls traffic-eng path-option 1 explicit name BACKUP_{{west_nei_hostname}}_TE
+!
+{%- endif %}
+interface TenGigabitEthernet{{ interface_number_east_nei }}
+{%- if xr_east %}
+description {{new_node_hostname}}{{interface_number_east_nei}}-{{east_nei_hostname}}{{xr_east_nei_interface}}/{{ring_number}}
+{%- endif %}
+{%- if ASR903_east %}
+ description {{new_node_hostname}}{{interface_number_east_nei}}-{{east_nei_hostname}}{{XE_east_nei_interface_1_number}}/{{ring_number}}
+{%- endif %} 
+ dampening
+ mtu 9202
+ no ip redirects
+ no ip unreachables
+ no ip proxy-arp
+ ip address {{ interface_ip_east_nei }} 255.255.255.254
+ ip pim query-interval 2
+ ip pim sparse-mode
+ ip router isis access{{isis_access_process_number}}
+ isis network point-to-point
+ isis authentication mode md5
+ isis authentication key-chain HMAC-MD5-ISIS
+ logging event link-status
+ load-interval 30
+ carrier-delay msec 0
+ mpls ip
+ mpls label protocol ldp
+{%- if tunnel %}
+ mpls traffic-eng tunnels
+ mpls traffic-eng backup-path Tunnel{{backup_tunnel_east_nei}}
+{%- endif %}
+ synchronous mode
+ bfd template Access
+ cdp enable
+ service-policy input GLOBAL_CORE_INGRESS
+ service-policy output GLOBAL_CORE_EGRESS
+ ip rsvp bandwidth
+ ip rsvp signalling hello bfd
+!
+interface TenGigabitEthernet{{ interface_number_west_nei }}
+{%- if xr_west %}
+ description {{new_node_hostname}}{{interface_number_west_nei}}-{{west_nei_hostname}}{{xr_west_nei_interface}}/{{ring_number}}
+{%- endif %}
+{%- if ASR903_west %}
+ description {{new_node_hostname}}{{interface_number_west_nei}}-{{west_nei_hostname}}{{XE_west_nei_interface_1_number}}/{{ring_number}}
+{%- endif %}
+ dampening
+ mtu 9202
+ ip address {{ interface_ip_west_nei }} 255.255.255.254
+ no ip redirects
+ no ip unreachables
+ no ip proxy-arp
+ ip pim query-interval 2
+ ip pim sparse-mode
+ ip router isis access{{isis_access_process_number}}
+ isis network point-to-point
+ isis authentication mode md5
+ isis authentication key-chain HMAC-MD5-ISIS
+ logging event link-status
+ load-interval 30
+ carrier-delay msec 0
+ mpls ip
+ mpls label protocol ldp
+{%- if tunnel %}
+ mpls traffic-eng tunnels
+ mpls traffic-eng backup-path Tunnel{{backup_tunnel_west_nei}}
+{%- endif %}
+ synchronous mode
+ bfd template Access
+ cdp enable
+ service-policy input GLOBAL_CORE_INGRESS
+ service-policy output GLOBAL_CORE_EGRESS
+ ip rsvp bandwidth
+ ip rsvp signalling hello bfd
+!
+!
+interface GigabitEthernet0
+vrf forwarding Mgmt-intf
+ip address 192.168.10.1 255.255.255.0
+negotiation auto
+!
+router isis access{{isis_access_process_number}}
+ net {{ net_id }}
+ is-type level-2-only
+ router-id loopback0
+ authentication mode md5
+ nsf cisco
+ authentication key-chain HMAC-MD5-ISIS
+ metric-style wide
+ ip route priority high tag 10000
+ set-overload-bit on-startup 360
+ max-lsp-lifetime 65535
+ lsp-refresh-interval 64000
+ spf-interval 5 50 200
+ prc-interval 5 50 200
+ lsp-gen-interval 5 50 200
+ no hello padding
+ log-adjacency-changes
+ microloop avoidance
+ fast-reroute per-prefix level-2 route-map IPFRR
+ fast-reroute remote-lfa level-2 mpls-ldp
+!
+ passive-interface Loopback0
+ passive-interface Loopback1
+ bfd all-interfaces
+ mpls ldp sync
+ mpls traffic-eng router-id Loopback0
+ mpls traffic-eng level-2
+ mpls traffic-eng multicast-intact
+!
+router bgp 65112
+ bgp router-id {{  loopback0_IP }}
+ bgp log-neighbor-changes
+ bgp graceful-restart restart-time 120
+ bgp graceful-restart stalepath-time 360
+ bgp graceful-restart
+ no bgp default ipv4-unicast
+ neighbor agg-rr peer-group
+ neighbor agg-rr remote-as 65112
+ neighbor agg-rr update-source Loopback0
+ neighbor agg-rr fall-over
+ neighbor {{ bgp_nei1  }} peer-group agg-rr
+ neighbor {{ bgp_nei2  }} peer-group agg-rr
+ !
+ address-family ipv4
+  bgp nexthop trigger delay 1
+  network {{  loopback0_IP }} mask 255.255.255.255 route-map SET_COMMUNITY
+  network {{ interface_ip_east_nei }} mask 255.255.255.254 route-map NMS
+  network {{ interface_ip_west_nei }} mask 255.255.255.254 route-map NMS
+  neighbor agg-rr send-community both
+  neighbor agg-rr next-hop-self all
+  neighbor agg-rr send-label
+  neighbor {{ bgp_nei1  }} activate
+  neighbor {{ bgp_nei2  }} activate
+ exit-address-family
+ !
+ address-family vpnv4
+  bgp nexthop trigger delay 1
+  neighbor agg-rr send-community both
+  neighbor agg-rr next-hop-self all
+  neighbor {{ bgp_nei1  }} activate
+  neighbor {{ bgp_nei2  }} activate
+ exit-address-family
+ !
+ address-family ipv4 mdt
+  neighbor agg-rr send-community both
+  neighbor agg-rr next-hop-self all
+  neighbor {{ bgp_nei1  }} activate
+  neighbor {{ bgp_nei2  }} activate
+ exit-address-family
+ !
+ address-family vpnv6
+  bgp nexthop trigger delay 1
+  neighbor agg-rr send-community both
+  neighbor agg-rr next-hop-self all
+  neighbor {{ bgp_nei1  }} activate
+  neighbor {{ bgp_nei2  }} activate
+ exit-address-family
+ !
+ address-family rtfilter unicast
+  neighbor agg-rr send-community both
+  neighbor agg-rr next-hop-self all
+  neighbor {{ bgp_nei1  }} activate
+  neighbor {{ bgp_nei2  }} activate
+ exit-address-family
+!
+route-map SET_COMMUNITY permit 10
+ set community 65112:{{isis_access_process_number}}
+!
+route-map NMS permit 5
+ set community 65112:999
+!
+!
+route-map IPFRR permit 10
+match tag 10000
+!
+ip forward-protocol nd
+!
+ip bgp-community new-format
+no ip http server
+no ip http secure-server
+ip tacacs source-interface Loopback0
+ip pim ssm range SSMRANGE
+ip rsvp signalling hello
+ip rsvp signalling hello bfd
+ip rsvp signalling hello graceful-restart mode full
+!
+!
+ip access-list standard MPLS_Loopbacks
+permit 10.60.184.0 0.0.3.255
+ permit 10.229.5.0 0.0.0.255
+ permit 10.229.6.0 0.0.0.255
+ permit 10.229.29.0 0.0.0.255
+ permit 10.229.30.0 0.0.0.255
+ permit 10.229.31.0 0.0.0.255
+ permit 125.62.173.0 0.0.0.255
+ permit 125.62.174.0 0.0.0.255
+ permit 10.230.1.0 0.0.0.255
+ permit 10.230.2.0 0.0.0.255
+ permit 10.229.0.0 0.0.31.255
+ permit 10.230.0.0 0.0.31.255
+ permit 10.225.119.0 0.0.0.255
+ permit 10.225.118.0 0.0.0.255
+ permit 100.64.4.0 0.0.0.255
+ permit 10.60.186.0 0.0.0.255
+ permit 100.64.14.0 0.0.0.255
+ permit 100.64.15.0 0.0.0.255
+ permit 10.230.20.0 0.0.0.255
+ permit 10.230.5.0 0.0.0.255
+ permit 10.230.5.0 0.0.0.255
+ permit 100.64.26.0 0.0.0.255
+ permit 100.64.27.0 0.0.0.255
+!
+ip access-list standard PRIME
+ permit 10.229.7.32 0.0.0.15
+ permit 10.229.7.48 0.0.0.15
+!
+ip access-list standard TELNET
+ permit 10.14.96.100
+ permit 10.119.137.246
+ permit 10.119.137.240
+ permit 10.119.137.252
+ permit 172.17.254.75
+ permit 10.119.137.253
+ permit 10.5.185.209
+ permit 10.5.185.237
+ permit 10.5.185.238
+ permit 10.5.185.74
+ permit 10.5.185.79
+ permit 10.227.244.75
+ permit 10.227.244.76
+ permit 10.227.244.82
+ permit 10.119.137.254
+ permit 10.119.137.248
+ permit 10.119.137.249
+ permit 10.119.137.250
+ permit 10.119.137.251
+ permit 172.23.254.101
+ permit 172.23.254.100
+ permit 172.23.254.103
+ permit 172.23.254.102
+ permit 10.14.97.76
+ permit 172.23.254.105
+ permit 172.23.254.104
+ permit 172.23.254.106
+ permit 172.23.254.124
+ permit 172.23.254.123
+ permit 172.23.254.9
+ permit 172.23.254.10
+ permit 172.23.254.15
+ permit 10.5.185.54
+ permit 10.5.185.55
+ permit 10.5.185.52
+ permit 10.5.185.53
+ permit 10.5.185.50
+ permit 10.5.185.51
+ permit 10.5.185.48
+ permit 202.123.47.16
+ permit 10.5.185.56
+ permit 202.123.47.17
+ permit 202.123.47.14
+ permit 202.123.47.15
+ permit 202.123.47.13
+ permit 10.8.147.50
+ permit 10.10.184.30
+ permit 172.25.0.18
+ permit 10.10.184.31
+ permit 10.5.185.31
+ permit 172.25.0.5
+ permit 10.10.184.6
+ permit 203.91.195.150
+ permit 203.145.184.49
+ permit 203.145.184.52
+ permit 203.145.184.57
+ permit 203.145.184.6
+ permit 172.26.0.66
+ permit 172.26.0.65
+ permit 10.20.0.1
+ permit 10.14.97.76
+ permit 172.23.254.9
+ permit 192.168.2.7
+ permit 10.5.185.54
+ permit 10.5.185.55
+ permit 10.5.185.52
+ permit 10.5.185.53
+ permit 10.5.185.50
+ permit 10.5.185.51
+ permit 10.5.185.48
+ permit 202.123.47.16
+ permit 10.5.185.56
+ permit 202.123.47.17
+ permit 202.123.47.14
+ permit 202.123.47.15
+ permit 202.123.47.13
+ permit 192.168.2.200
+ permit 10.8.147.50
+ permit 10.5.185.31
+ permit 192.168.20.215
+ permit 192.168.20.210
+ permit 192.168.20.200
+ permit 192.168.2.210
+ permit 172.20.0.0 0.0.7.255
+ permit 172.20.8.0 0.0.1.255
+ permit 192.168.48.0 0.0.3.255
+ permit 192.168.50.0 0.0.1.255
+ permit 192.168.52.0 0.0.1.255
+ permit 192.168.54.0 0.0.1.255
+ permit 10.229.7.32 0.0.0.15
+ permit 10.229.7.48 0.0.0.15
+ permit 10.227.224.70
+ permit 10.227.244.80
+!
+logging buffering debugging
+logging history debugging
+logging source-interface Loopback0
+logging host 172.23.254.10
+logging host 10.10.184.6
+logging host 10.227.244.68
+access-list 5 permit {{ xr1_loopback0_IP }}
+access-list 5 permit {{ xr2_loopback0_IP }}
+access-list 5 deny   any
+access-list 50 permit 10.227.244.73
+access-list 50 permit 10.227.244.72
+access-list 50 permit 10.227.244.74
+access-list 50 permit 10.227.244.69
+access-list 50 permit 10.227.244.71
+access-list 50 permit 10.227.244.70
+access-list 50 permit 10.5.185.54
+access-list 50 permit 10.5.185.55
+access-list 50 permit 10.5.185.53
+access-list 50 permit 10.5.185.52
+access-list 50 permit 10.5.185.50
+access-list 50 permit 10.5.185.51
+access-list 50 permit 10.5.185.48
+access-list 50 permit 10.5.185.30
+access-list 50 permit 10.5.185.31
+access-list 50 permit 10.5.185.209
+access-list 50 permit 10.5.185.237
+access-list 50 permit 10.5.185.238
+access-list 50 permit 10.5.185.74
+access-list 50 permit 10.5.185.79
+access-list 50 permit 10.227.244.75
+access-list 50 permit 10.227.244.76
+access-list 50 permit 10.227.244.82
+access-list 1997 permit 10.119.137.252
+access-list 1997 permit 172.30.163.45
+access-list 1997 permit 172.17.254.0 0.0.0.31
+access-list 1997 permit 172.17.254.32 0.0.0.31
+access-list 1997 permit 172.23.254.0 0.0.0.255
+access-list 1997 permit 10.10.184.0 0.0.0.255
+access-list 1997 permit 10.229.7.32 0.0.0.15
+access-list 1997 permit 10.229.7.48 0.0.0.15
+access-list 1997 permit 10.229.7.44 0.0.0.15
+access-list 1998 permit 172.17.254.3
+!
+snmp-server view cutdown iso included
+snmp-server view cutdown at excluded
+snmp-server view cutdown snmpUsmMIB excluded
+snmp-server view cutdown snmpVacmMIB excluded
+snmp-server view cutdown snmpCommunityMIB excluded
+snmp-server view cutdown ip.21 excluded
+snmp-server view cutdown ip.22 excluded
+snmp-server community Cisco1 view cutdown RO 1997
+snmp-server community Alc@TeL@ccE$$ view cutdown RO 50
+snmp-server community Ch3nn@1C3n view cutdown RW 1998
+snmp-server trap-source Loopback0
+snmp-server enable traps snmp authentication linkdown linkup coldstart warmstart
+snmp-server enable traps ospf state-change neighbor-state-change
+snmp-server enable traps bfd
+snmp-server enable traps bgp
+snmp-server enable traps config
+snmp-server enable traps syslog
+snmp-server enable traps cpu threshold
+snmp-server enable traps sonet
+snmp-server enable traps flash insertion removal
+snmp-server enable traps mpls ldp session-up session-down
+snmp-server enable traps mpls traffic-eng up down
+snmp-server enable traps pw vc
+snmp-server enable traps l2tun session
+snmp-server enable traps l2tun pseudowire status
+snmp-server enable traps mpls vpn
+snmp-server enable traps transceiver all
+snmp-server host 172.17.254.38 version 2c Cisco1
+snmp-server host 172.17.254.38 public
+mpls ldp router-id Loopback0 force
+!
+tacacs-server host 10.227.224.73 single-connection
+tacacs-server host 10.227.244.86 single-connection
+tacacs-server directed-request
+tacacs-server key 7 045903071D350D6E0A0A
+!
+!
+!
+control-plane
+!
+banner motd ^CCCCC
+  
+  
+  
+ +----------------------------------------------------------------------+
+ |   This system is the property of Bharti Enterprise Ltd               |
+ |   This system is for the use of authorized users only.               |
+ |   Individuals using this system without authority, or in             |
+ |   excess of their authority, are subject to having all of their      |
+ |   activities on this system monitored and recorded by system         |
+ |   personnel.                                                         |
+ |                                                                      |
+ |   In the course of monitoring individuals improperly using this      |
+ |   system, or in the course of system maintenance, the activities     |
+ |   of authorized users may also be monitored.                         |
+ |                                                                      |
+ |   Anyone using this system expressly consents to such monitoring     |
+ |   and is advised that if such monitoring reveals possible            |
+ |   evidence of criminal activity, system personnel may provide the    |
+ |   evidence of such monitoring to law enforcement officials.          |
+ +----------------------------------------------------------------------+
+  
+^C
+!
+line con 0
+ password cisco
+ stopbits 1
+line aux 0
+ stopbits 1
+line vty 0 4
+ session-timeout 30
+ exec-timeout 30 0
+ password cisco
+ transport input telnet ssh
+ transport output telnet ssh
+line vty 5
+ session-timeout 30
+ access-class PRIME in
+ password 7 0822455D0A16
+ authorization commands 1 mgmt
+ authorization exec mgmt
+ login authentication mgmt
+ rotary 1
+ transport input telnet ssh
+ transport output telnet ssh
+line vty 6 15
+ session-timeout 30
+ access-class TELNET in
+ password cisco
+ transport input telnet ssh
+ transport output telnet ssh
+!
+network-clock revertive
+network-clock synchronization automatic
+network-clock synchronization mode QL-enabled
+network-clock input-source 5 interface TenGigabitEthernet{{ interface_number_east_nei }}
+network-clock input-source 10 interface TenGigabitEthernet{{ interface_number_west_nei }}
+esmc process
+!
+!
+!
+ntp authentication-key 1 md5 101E514B5542345F2D500C7F757C17610142224653 7
+ntp authenticate
+ntp trusted-key 1
+ntp source Loopback0
+ntp access-group peer 5
+ntp server {{ xr1_loopback0_IP }}
+ntp server {{ xr2_loopback0_IP }}
+!
+
+crypto key generate rsa general-keys
+2048
+end
+wr
+
+===============================================================================================================
+{%- if xr_west %}
+configuration for {{ xr_west_hostname }}
+
+configure terminal
+{%- if tunnel %}
+no interface tunnel-te{{ xr_west_tunnel_1_number }}
+interface tunnel-te{{ xr_west_tunnel_1_number }}
+ description @@@@ Link Protection Primary Tunnel to {{ new_node_hostname }}
+ ipv4 unnumbered Loopback{{isis_access_process_number}}
+ priority 1 1
+ autoroute announce
+ destination {{ loopback0_IP }}
+ fast-reroute
+ path-option 1 dynamic
+!
+explicit-path name BACKUP_{{new_node_hostname}}ACC_TE
+ index 10 exclude-address ipv4 unicast {{ xr_west_nei_ip }}
+!
+no interface tunnel-te{{xr_west_tunnel_2_number}}
+interface tunnel-te{{xr_west_tunnel_2_number}}
+ description @@@@ Link backup Tunnel to {{ new_node_hostname }}
+ ipv4 unnumbered Loopback{{isis_access_process_number}}
+ priority 2 2
+ destination {{ loopback0_IP }}
+ path-option 1 explicit name BACKUP_{{new_node_hostname}}ACC_TE
+!
+{%- endif %}
+default interface TenGigE{{ xr_west_nei_interface }}
+interface TenGigE{{ xr_west_nei_interface }}
+ description {{xr_west_link_label}}
+ cdp
+ mtu 9216
+ service-policy output GLOBAL_CORE_EGRESS
+ ipv4 address {{ xr_west_nei_ip }} 255.255.255.254
+ carrier-delay up 0 down 0
+ load-interval 30
+ dampening
+ frequency synchronization
+!
+router isis access{{isis_access_process_number}}
+ interface TenGigE{{ xr_west_nei_interface }}
+  circuit-type level-2-only
+  bfd minimum-interval 50
+  bfd multiplier 3
+  bfd fast-detect ipv4
+  point-to-point
+  hello-padding disable
+  hello-password keychain bharti
+  address-family ipv4 unicast
+  fast-reroute per-prefix
+  fast-reroute per-prefix remote-lfa tunnel mpls-ldp level 2
+   mpls ldp sync
+  !
+ !
+!
+multicast-routing
+ address-family ipv4
+  interface TenGigE{{ xr_west_nei_interface }}
+   enable
+  !
+!
+router pim
+  interface TenGigE{{ xr_west_nei_interface }}
+   enable
+   hello-interval 2
+  !
+!
+mpls ldp
+ neighbor {{loopback0_IP}}:0 password encrypted 011215001D534E542D47
+ interface TenGigE{{ xr_west_nei_interface }}
+ {%- if tunnel %}
+ interface tunnel-te{{ xr_west_tunnel_1_number}}
+ {%- endif %}
+ !
+!
+rsvp
+ interface TenGigE{{ xr_west_nei_interface }}
+  bandwidth
+ !
+!
+mpls traffic-eng
+ interface TenGigE{{ xr_west_nei_interface }}
+  bfd fast-detect
+  {%- if tunnel %}
+  backup-path tunnel-te {{ xr_west_tunnel_2_number}}
+  {%- endif %}
+ !
+!
+end
+yes
+
+****** West_aggr_delta_config *****
+configure terminal
+router bgp 65112
+ neighbor {{ loopback0_IP }}
+  use neighbor-group access{{isis_access_process_number}}
+ !
+!
+commit
+end
+{%- endif %}
+
+================================================================================================
+
+{%- if ASR903_east %}
+ configuration for {{ ASR903_east_hostname }}
+
+configure terminal
+{%- if tunnel %}
+no interface Tunnel{{ XE_east_nei_tunnel_1_number }}
+interface Tunnel{{ XE_east_nei_tunnel_1_number }}
+ Description @@@@ Link Protection Primary Tunnel to {{ new_node_hostname }}
+ ip unnumbered Loopback0
+ mpls ip
+ mpls traffic-eng tunnels
+ tunnel mode mpls traffic-eng
+ tunnel destination {{ loopback0_IP }}
+ tunnel mpls traffic-eng autoroute announce
+ tunnel mpls traffic-eng priority 1 1
+ tunnel mpls traffic-eng path-option 1 dynamic
+ tunnel mpls traffic-eng fast-reroute
+!
+ip explicit-path name BACKUP_{{new_node_hostname}}_TE enable
+ exclude-address {{ XE_east_nei_interface_1_ip }}
+!
+no interface Tunnel{{ XE_east_nei_tunnel_2_number }}
+interface Tunnel{{ XE_east_nei_tunnel_2_number }}
+ Description @@@@ Link Protection backup Tunnel to {{ new_node_hostname }}
+ ip unnumbered Loopback0
+ mpls traffic-eng tunnels
+ tunnel mode mpls traffic-eng
+ tunnel destination {{ loopback0_IP }}
+ tunnel mpls traffic-eng priority 2 2
+ tunnel mpls traffic-eng path-option 1 explicit name BACKUP_{{new_node_hostname}}_TE
+!
+{%- endif %}
+default interface TenGigabitEthernet{{ XE_east_nei_interface_1_number }}
+interface TenGigabitEthernet{{ XE_east_nei_interface_1_number }}
+ description {{XE_east_link_label}}
+ dampening
+ mtu 9202
+ ip address {{ XE_east_nei_interface_1_ip }} 255.255.255.254
+ ip router isis access{{isis_access_process_number}}
+ ip pim query-interval 2
+ ip pim sparse-mode
+ mpls ip
+ mpls label protocol ldp
+ mpls traffic-eng tunnels
+ {%- if tunnel %}
+ mpls traffic-eng backup-path Tunnel{{ XE_east_nei_tunnel_2_number }}
+ {%- endif %}
+ synchronous mode
+ bfd template Access
+ cdp enable
+ isis network point-to-point
+ isis authentication mode md5
+ isis authentication key-chain HMAC-MD5-ISIS
+ service-policy input CORE_QOS_IN
+ service-policy output CORE_QOS_OUT
+ service-policy input GLOBAL_CORE_INGRESS
+ service-policy output GLOBAL_CORE_EGRESS
+ ip rsvp bandwidth
+ ip rsvp signalling hello bfd
+!
+mpls ldp neighbor {{ loopback0_IP }} password 7 011215001D534E542D47
+!
+end
+wr
+
+
+{%- endif %}
+
+====================================================================================================
+configuration for {{ hostname_xr_east }}
+{%- if xr_east %}
+East neighbor
+configure terminal
+{%- if tunnel %}
+no interface tunnel-te{{ xr_east_tunnel_1_number}}
+interface tunnel-te{{ xr_east_tunnel_1_number}}
+ description @@@@ Link Protection Primary Tunnel to {{ new_node_hostname }}
+ ipv4 unnumbered Loopback{{isis_access_process_number}}
+ priority 1 1
+ autoroute announce
+ destination {{ loopback0_IP }}
+ fast-reroute
+ path-option 1 dynamic
+!
+explicit-path name BACKUP_{{new_node_hostname}}ACC_TE
+ index 10 exclude-address ipv4 unicast {{ xr_east_interface_ip }}
+!
+no interface tunnel-te{{ xr_east_tunnel_2_number}}
+interface tunnel-te{{ xr_east_tunnel_2_number}}
+ description @@@@ Link Protection backup Tunnel to {{ new_node_hostname }}
+ ipv4 unnumbered Loopback{{isis_access_process_number}}
+ priority 2 2
+ destination {{ loopback0_IP }}
+ path-option 1 explicit name BACKUP_{{new_node_hostname}}ACC_TE
+!
+{%- endif %}
+default interface TenGigE{{ xr_east_nei_interface }}
+interface TenGigE{{ xr_east_nei_interface }}
+ description {{xr_east_link_label}}
+ cdp
+ mtu 9216
+ service-policy output GLOBAL_CORE_EGRESS
+ ipv4 address {{ xr_east_interface_ip }} 255.255.255.254
+ carrier-delay up 0 down 0
+ load-interval 30
+ dampening
+ frequency synchronization
+!
+router isis access{{isis_access_process_number}}
+ interface TenGigE{{ xr_east_nei_interface }}
+  circuit-type level-2-only
+  bfd minimum-interval 50
+  bfd multiplier 3
+  bfd fast-detect ipv4
+  point-to-point
+  hello-padding disable
+  hello-password keychain bharti
+  address-family ipv4 unicast
+  fast-reroute per-prefix
+  fast-reroute per-prefix remote-lfa tunnel mpls-ldp level 2
+   mpls ldp sync
+  !
+ !
+!
+multicast-routing
+ address-family ipv4
+  interface TenGigE{{ xr_east_nei_interface }}
+   enable
+  !
+!
+router pim
+  interface TenGigE{{ xr_east_nei_interface }}
+   enable
+   hello-interval 2
+  !
+!
+mpls ldp
+ neighbor {{loopback0_IP}}:0 password encrypted 011215001D534E542D47
+ interface TenGigE{{ xr_east_nei_interface }}
+ {%- if tunnel %}
+ interface tunnel-te{{ xr_east_tunnel_1_number}}
+ {%- endif %}
+ !
+!
+rsvp
+ interface TenGigE{{ xr_east_nei_interface }}
+  bandwidth
+ !
+!
+mpls traffic-eng
+ interface TenGigE{{ xr_east_nei_interface }}
+  bfd fast-detect
+  {%- if tunnel %}
+  backup-path tunnel-te {{ xr_east_tunnel_2_number}}
+  {%- endif %}
+ !
+!
+end
+yes
+
+configure terminal
+router bgp 65112
+ neighbor {{ loopback0_IP }}
+  use neighbor-group access{{isis_access_process_number}}
+ !
+!
+commit
+end
+{%- endif %}
+
+-------------------------------------------------------------------------------------------------
+
+{%- if ASR903_west %}
+configuration for {{hostname_ASR903_west}}
+configure terminal
+{%- if tunnel %}
+no interface Tunnel{{ XE_west_nei_tunnel_1_number }}
+interface Tunnel{{ XE_west_nei_tunnel_1_number }}
+ description @@@@ Link Protection Primary Tunnel to {{ new_node_hostname }}
+ ip unnumbered Loopback0
+ mpls ip
+ mpls traffic-eng tunnels
+ tunnel mode mpls traffic-eng
+ tunnel destination {{ loopback0_IP }}
+ tunnel mpls traffic-eng autoroute announce
+ tunnel mpls traffic-eng priority 1 1
+ tunnel mpls traffic-eng path-option 1 dynamic
+ tunnel mpls traffic-eng fast-reroute
+!
+ip explicit-path name BACKUP_{{new_node_hostname}}_TE enable
+ exclude-address {{ XE_west_nei_interface_1_ip }}
+!
+no interface Tunnel{{ XE_west_nei_tunnel_2_number }}
+interface Tunnel{{ XE_west_nei_tunnel_2_number }}
+ description @@@@ Link Protection backup Tunnel to {{ new_node_hostname }}
+ ip unnumbered Loopback0
+ mpls traffic-eng tunnels
+ tunnel mode mpls traffic-eng
+ tunnel destination {{ loopback0_IP }}
+ tunnel mpls traffic-eng priority 2 2
+ tunnel mpls traffic-eng path-option 1 explicit name BACKUP_{{new_node_hostname}}_TE
+!
+{%- endif %}
+default interface TenGigabitEthernet{{ XE_west_nei_interface_1_number }}
+interface TenGigabitEthernet{{ XE_west_nei_interface_1_number }}
+ description {{XE_west_link_label}}
+ dampening
+ mtu 9202
+ ip address {{ XE_west_nei_interface_1_ip }} 255.255.255.254
+ ip router isis access{{isis_access_process_number}}
+ ip pim query-interval 2
+ ip pim sparse-mode
+ mpls ip
+ mpls label protocol ldp
+ mpls traffic-eng tunnels
+ {%- if tunnel %}
+ mpls traffic-eng backup-path Tunnel{{ XE_west_nei_tunnel_2_number }}
+ {%- endif %}
+ synchronous mode
+ bfd template Access
+ cdp enable
+ isis network point-to-point
+ isis authentication mode md5
+ isis authentication key-chain HMAC-MD5-ISIS
+ service-policy input CORE_QOS_IN
+ service-policy output CORE_QOS_OUT
+ service-policy input GLOBAL_CORE_INGRESS
+ service-policy output GLOBAL_CORE_EGRESS
+ ip rsvp bandwidth
+ ip rsvp signalling hello bfd
+!
+mpls ldp neighbor {{ loopback0_IP }} password 7 011215001D534E542D47
+!
+end
+wr
+{%- endif %}
