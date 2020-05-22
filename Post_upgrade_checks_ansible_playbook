@@ -1,0 +1,59 @@
+---
+- name: post upgrade checks
+  hosts: post_upgrade
+  connection: local
+  tasks:
+  - name: ios version check
+    iosxr_command:
+      commands:
+        - sh version | i Version
+    register: results
+  - debug:
+      var: results.stdout
+  - assert:
+      that: "'6.6.3' in results.stdout[0]"
+  - name: committed package
+    iosxr_command:
+      commands:
+        - sh install committed summary | i Committed
+    register: results1
+  - debug:
+      var: results1.stdout
+  - assert:
+      that: "'Committed Packages: 16' in results1.stdout[0]"
+  - name: hw check
+    iosxr_command:
+      commands:
+        - sh running-config | i hw
+    register: results2
+  - debug:
+      var: results2.stdout
+  - assert:
+      that: "'512' in results2.stdout[0]"
+  - name: sr 519999 check
+    iosxr_command:
+      commands:
+        - sh running-config segment-routing | i 519999
+    register: results3
+  - debug:
+      var: results3.stdout
+  - assert:
+      that: "'519999' in results3.stdout[0]"
+  - name: overload check
+    iosxr_command:
+      commands:
+        - sh running-config router isis T4 | include overload-bit
+    register: results4
+  - debug:
+      var: results4.stdout
+  - assert:
+      that: "'wait-for-bgp' in results4.stdout[0]"
+  - name: mtu check
+    iosxr_command:
+      commands:
+        - sh interfaces
+    register: results5
+  - debug:
+      #var: results5.stdout
+  - assert:
+      that: "'MTU 9216' in results5.stdout[0]"
