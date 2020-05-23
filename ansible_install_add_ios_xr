@@ -1,0 +1,22 @@
+---
+- name: install add
+  hosts: post_upgrade
+  connection: local
+  tasks:
+    - name: check 6.6.3
+      register: results
+      iosxr_command:
+        commands:
+          - "show install inactive summary | i 663"
+          - "show install active summary | i 663"
+          - "dir harddisk: | i 1685544960"
+    - debug:
+        var: results.stdout
+    - name: install add operation
+      iosxr_command:
+        commands:
+          - "install add source harddisk:/ NCS5500-6.6.3-Image+SMU+Bundle-V2.tar"
+      when: "'ncs5500-dpa-fwding-4.1.0.6-r663.CSCvt47696' not in results.stdout[0] and 'ncs5500-dpa-fwding-4.1.0.6-r663.CSCvt47696' not in results.stdout[1] and '1685544960' in results.stdout[2]"
+      register: results1
+    - debug:
+        var: results1
