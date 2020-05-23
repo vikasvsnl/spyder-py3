@@ -1,0 +1,41 @@
+---
+- name: back up config and looks at device health indicators on ios devices
+  hosts: peyto_hphp
+  connection: local
+  tasks:
+  - name: ios version check
+    iosxr_command:
+      commands:
+        - sh install active summary
+    register: results
+  - debug:
+      var: results.stdout
+  - assert:
+      that: "'CSCvp88979' and 'CSCvm46773' and 'CSCvm70957' and 'CSCvm70926' and 'CSCvn26549' in results.stdout[0]"
+  - name: snmp server check
+    iosxr_command:
+      commands:
+        - sh run | i snmp-server host
+    register: results1
+  - debug:
+      var: results1.stdout
+  - assert:
+      that: "'202.123.46.230' in results1.stdout[0]"
+  - name: ntp server check
+    iosxr_command:
+      commands:
+        - sh run formal ntp
+    register: results2
+  - debug:
+      var: results2.stdout
+  - assert:
+      that: "'202.56.230.29' in results2.stdout[0]"
+  - name: syslog server check
+    iosxr_command:
+      commands:
+        - sh run formal logging
+    register: results3
+  - debug:
+      var: results3.stdout
+  - assert:
+      that: "'202.56.230.23' in results3.stdout[0]"
