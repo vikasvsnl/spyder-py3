@@ -1,0 +1,27 @@
+- hosts: asr9k_upw
+  connection: local
+  vars:
+    trapdests: []
+  tasks:
+    - name: show version
+      register: command_out
+      iosxr_command:
+        commands: "sh ipv4 interface loop0 brief | include Loopback0"
+    - debug:
+        var: command_out.stdout
+    - name: trapping the Loopback ip
+      register: trapdests
+      set_fact:
+        trapdests: "{{[item.split()[1]]}}"
+      with_items: "{{command_out.stdout_lines}}"
+    - debug:
+        var: trapdests[0]
+    - name: enable PCEP
+      iosxr_config:
+        lines:
+           - traffic-eng
+           - pcc
+           - source-address ipv4 {{trapdests[0]}}
+           - pce address ipv4 100.67.249.66
+           - precedence 100
+        parents: segment-routing
