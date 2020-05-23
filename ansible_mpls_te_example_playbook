@@ -1,0 +1,39 @@
+- hosts: XR9k
+  connection: local
+  tasks:
+    - name: show isis T4
+      register: results
+      iosxr_command:
+        commands: "sh run router isis T4 | i T4"
+    - debug:
+        var: results.stdout
+    - name: mpls te loopback 0 under ISIS T4
+      iosxr_config:
+        lines:
+           - mpls traffic-eng router-id lo0
+        parents: router isis T4 address-family ipv4 unicast
+      when: "'router isis T4' in results.stdout"
+    - name: show isis IGP
+      register: results1
+      iosxr_command:
+        commands: "sh run router isis IGP | i IGP"
+    - debug:
+        var: results1.stdout
+    - name: mpls te loopback 0 under ISIS IGP
+      iosxr_config:
+        lines:
+           - mpls traffic-eng router-id lo0
+        parents: router isis IGP address-family ipv4 unicast
+      when: "'router isis IGP' in results1.stdout"
+    - name: show isis CORE
+      register: results2
+      iosxr_command:
+        commands: "sh run router isis CORE | i CORE"
+    - debug:
+        var: results2.stdout
+    - name: mpls te loopback 0 under ISIS CORE
+      iosxr_config:
+        lines:
+           - mpls traffic-eng router-id lo0
+        parents: router isis IGP address-family ipv4 unicast
+      when: "'router isis CORE' in results2.stdout"
