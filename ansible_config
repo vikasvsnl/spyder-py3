@@ -1,0 +1,56 @@
+cat ansible.cfg
+[defaults]
+inventory = inventory
+#ask_pass = True
+host_key_checking = False
+#remote_user=ciscoin
+private_key_file = /home/cisco/.ssh/known_hosts
+
+[root]# ansible --version
+ansible 2.7.10
+  config file = /etc/ansible/ansible.cfg
+  configured module search path = [u'/root/.ansible/plugins/modules', u'/usr/share/ansible/plugins/modules']
+  ansible python module location = /usr/lib/python2.7/site-packages/ansible
+  executable location = /usr/bin/ansible
+  python version = 2.7.5 (default, Apr 11 2018, 07:36:10) [GCC 4.8.5 20150623 (Red Hat 4.8.5-28)]
+
+#vault_password_file = ../cisco/.rhv/vault-secret
+[privilege_escalation]
+become=True
+become_method=sudo
+[persistent_connection]
+# custom timeout values to accommodate slow 1000V VM
+command_timeout = 180
+connect_timeout = 100
+
+
+[root]# cat inventory >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+[rr]
+x.x.x.x
+x.x.x.x
+
+[XR9]
+x.x.x.x
+x.x.x.x
+
+cat vars.yml
+ansible_network_os: ios
+ansible_password: vikas@123
+ansible_user: vika
+[root]pwd
+/home/vik/group_vars/ios >>>>>>>>>>>>>>>>>>>>>>>>>> group variable
+
+router bgp 1
+vrf <vrf-name>
+  rd 1:999
+  address-family ipv4 unicast
+   additional-paths selection route-policy add_path
+  !
+
+[root]# pwd
+/home/vika/j2 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> template
+[root]#
+
+
+
+
