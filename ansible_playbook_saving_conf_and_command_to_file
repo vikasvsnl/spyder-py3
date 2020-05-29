@@ -1,0 +1,45 @@
+---
+- name: Backup
+  hosts: 116.119.14.77
+  connection: local
+  vars:
+    tmp1: j2/pre_post_commands.j2
+  tasks:
+  - name: Backup
+    register: results
+    iosxr_command:
+        commands: show run
+  - debug:
+        var: results.stdout_lines
+  - name: save
+    copy:
+      content: "{{ results.stdout[0] }}"
+      dest:    "{{ inventory_hostname }}.txt"
+	  
+
+
+---
+- name: Backup
+  hosts: post_upgrade
+  connection: local
+  tasks:
+  - name: get content of file
+    register: results
+    command : cat j2/pre_post_commands.j2
+  - debug:
+        var: results.stdout_lines
+  - name: command
+    register: results1
+    iosxr_command:
+        commands:
+           - "{{ item }}"
+    with_items: "{{ results.stdout_lines }}"
+  - debug:
+        var: results1.results
+  - name: save
+    copy:
+      content: "{{ results1.results }}"
+      dest:    "{{ inventory_hostname }}.txt"
+
+
+
