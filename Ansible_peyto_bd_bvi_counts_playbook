@@ -1,0 +1,26 @@
+---
+- name: BVI and BD Counts
+  hosts: post_upgrades
+  connection: local
+  tasks:
+  - name: BVI
+    iosxr_command:
+      commands:
+        - sh interfaces summary | i IFT_BVI
+    register: results
+  - debug:
+      var: results.stdout[0].split()[1:3]
+  - name: BD
+    iosxr_command:
+      commands:
+        - sh l2vpn bridge-domain summary | i bridge-domains
+    register: results1
+  - debug:
+      var: results1.stdout[0].split()[3:6]
+  - name: save
+    lineinfile:
+      #state: present
+      #insertafter: EOF
+      #create: True
+     line: "{{inventory_hostname}} Total_INF_BVI {{results.stdout[0].split()[1]}} UP_BVI {{results.stdout[0].split()[2]}} Total_BD {{results1.stdout[0].split()[3].strip(',')}} UP_BD {{results1.stdout[0].split()[5].strip(',')}}"
+     dest:    "./output/BD_BVI.csv"
