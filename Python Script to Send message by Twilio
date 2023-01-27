@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+
+from nornir import InitNornir
+from nornir_utils.plugins.functions import print_result
+from nornir_netmiko import netmiko_send_command
+import os
+from twilio.rest import Client
+
+# SMS config
+account_sid = os.environ['TWILIO_ACCOUNT_SID']
+auth_token = os.environ['TWILIO_AUTH_TOKEN']
+from_number = os.environ['TWILIO_FROM_NUM']
+to_number = os.environ['TWILIO_TO_NUM']
+
+client = Client(account_sid, auth_token)
+
+nr = InitNornir()
+
+cmd_output = nr.run(task=netmiko_send_command, command_string="sh bgp vpnv4 unicast summary")
+print_result(cmd_output)
+
+for output in cmd_output:
+    if 'idle' or 'active' in output:
+        print ('bgp is down')
+        message = client.messages \
+                .create(
+                body="ISP BGP nei is down needs to check further " + str(nr.inventory.hosts),
+                from_=from_number,
+                to=to_number )
